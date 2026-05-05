@@ -161,13 +161,19 @@ API 키 없으면 건너뜀 (에러 무시).
 
 **스크립트**: `generate-images.js`
 
+```bash
+# metadata.json에서 en_points 추출 (없으면 빈 문자열)
+EN_POINTS=$(node -e "try{const m=require('./output/<폴더>/metadata.json');console.log((m.en_points||[]).join('|||'))}catch{console.log('')}")
+```
+
 **옵션 A — 자동 생성** (GEMINI_API_KEY 있을 경우):
 ```bash
 set -a && . ./.env && set +a && node scripts/generate-images.js \
   --title "글 제목" \
   --keyword "키워드" \
   --points "포인트1|||포인트2|||포인트3" \
-  --output "output/폴더/images"
+  --en-points "$EN_POINTS" \
+  --output "output/<폴더>/images"
 ```
 
 **옵션 B — 프롬프트 출력** (Google AI Studio에 직접 입력):
@@ -176,10 +182,11 @@ node scripts/generate-images.js \
   --title "글 제목" \
   --keyword "키워드" \
   --points "포인트1|||포인트2|||포인트3" \
-  --output "output/폴더/images" \
+  --en-points "$EN_POINTS" \
+  --output "output/<폴더>/images" \
   --prompt-only
 ```
-→ `thumbnail_prompt.txt`, `infographic_prompt.txt` 생성
+→ `thumbnail_prompt.txt`, `infographic_prompt.txt` 생성 (모두 영문 — AI Studio / DALL-E / Midjourney 범용)
 
 **생성 이미지 2종**:
 
@@ -222,7 +229,8 @@ output/YYYY-MM-DD_키워드/
 **기능**:
 - 제목·태그·메타설명 복사 버튼
 - 섹션별 "서식 포함 복사" / "텍스트만 복사"
-- 이미지 2장 개별/일괄 다운로드
+- 이미지 N장 개별/일괄 다운로드 (이미지 수 동적 표시)
+- 이미지가 없고 `*_prompt.txt`만 있을 경우: 프롬프트 카드 (텍스트 + 1-click 복사) 렌더링
 - 발행 체크리스트
 
 ### `/blog-publish-ready "폴더"`

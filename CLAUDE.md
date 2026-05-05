@@ -89,7 +89,7 @@ claude-code-blog-builder/
 │   └── .gitkeep
 │
 └── docs/
-    ├── how-it-works.md
+    ├── explainer.md
     ├── setup-guide.md
     └── troubleshooting.md
 ```
@@ -163,12 +163,19 @@ Nano Banana Pro (Gemini 3 Pro Image) API 사용. 외부 의존성 0.
 - `BRAND_NAME` — 이미지에 박힐 브랜드명
 - `BRAND_BG_COLOR` / `BRAND_FG_COLOR` / `BRAND_ACCENT` — 컬러팔레트
 
+먼저 `metadata.json`에서 `en_points`를 추출합니다:
+```bash
+# metadata.json에서 en_points 추출 (없으면 빈 문자열)
+EN_POINTS=$(node -e "try{const m=require('./output/<폴더>/metadata.json');console.log((m.en_points||[]).join('|||'))}catch{console.log('')}")
+```
+
 **옵션 A — 자동 생성** (GEMINI_API_KEY 있을 경우):
 ```bash
 GEMINI_API_KEY=your_key node scripts/generate-images.js \
   --title "글 제목" \
   --keyword "키워드" \
   --points "포인트1|||포인트2|||포인트3" \
+  --en-points "$EN_POINTS" \
   --output "output/폴더/images"
 ```
 
@@ -178,13 +185,16 @@ node scripts/generate-images.js \
   --title "글 제목" \
   --keyword "키워드" \
   --points "포인트1|||포인트2|||포인트3" \
+  --en-points "$EN_POINTS" \
   --output "output/폴더/images" \
   --prompt-only
 ```
 
+> 프롬프트는 모두 영문이며 AI Studio · DALL-E · Midjourney 등 범용 사용 가능. 썸네일은 키워드 기반 영문 컨셉 일러스트로 생성하므로 한국어 제목 텍스트는 이미지에 박히지 않습니다.
+
 생성 이미지 2종:
-1. **썸네일** (16:9) — 메인 키워드 + 브랜드명
-2. **인포그래픽** (2:3) — 핵심 포인트 시각화
+1. **썸네일** (16:9) — 키워드 기반 영문 컨셉 일러스트 + 브랜드명
+2. **인포그래픽** (2:3) — 영어 핵심 포인트 시각화 (`en_points` 우선, 없으면 `points` 폴백)
 
 ### STEP 4: 품질 검증 + 유사도 검사
 
@@ -217,7 +227,8 @@ node scripts/preview.js --folder "output/폴더"
 브라우저에서:
 - 제목·태그·메타설명 카드 (각각 클립보드 복사)
 - 본문 섹션별 "서식 포함 복사" / "텍스트만 복사"
-- 이미지 2장 개별/일괄 다운로드
+- 이미지 N장 개별/일괄 다운로드
+- 이미지가 없고 프롬프트 파일만 있는 경우 → "프롬프트 카드"로 자동 렌더링 (복사 버튼 포함)
 - 발행 체크리스트 10개
 
 네이버 발행 API가 폐쇄돼 있어 자동 발행은 불가하지만, 이 도구로 복붙 마찰을 최소화합니다.

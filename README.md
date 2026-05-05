@@ -96,7 +96,7 @@ claude-code-blog-builder/
 이 시스템은 Tistory AI 기술 블로그를 운영하며 하루 1편을 꾸준히 발행하기 위해 만든 도구입니다.
 처음부터 완벽하게 설계되지 않았어요. 문제를 발견할 때마다 한 단계씩 보완했습니다.
 
-핵심 설계 원칙 + 동작 흐름: [docs/how-it-works.md](docs/how-it-works.md)
+핵심 설계 원칙 + 동작 흐름: [docs/explainer.md](docs/explainer.md)
 
 ---
 

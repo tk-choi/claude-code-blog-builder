@@ -29,11 +29,11 @@ claude-code-blog-builder/
 │
 ├── scripts/                         # 7개 Node.js 실행 스크립트
 │   ├── research.js                  # Naver API 키워드 리서치 (선택)
-│   ├── generate-images.js           # Gemini API 이미지 생성 (2종) + --prompt-only
+│   ├── generate-images.js           # Gemini API 이미지 생성 (2종, 영문 프롬프트) + --prompt-only + --en-points
 │   ├── quality-check.js             # 7항목 품질 검사
 │   ├── duplicate-check.js           # 6-gram Jaccard 유사도 검사
 │   ├── hook-post-write.js           # PostToolUse 훅 라우터
-│   ├── preview.js                   # 발행 어시스턴트 HTML 생성
+│   ├── preview.js                   # 발행 어시스턴트 HTML 생성 (이미지 없으면 프롬프트 카드 폴백)
 │   └── setup-tone-fetch.js          # 블로그 URL 본문 수집
 │
 ├── knowledge/                       # ⭐ Single Source of Truth
@@ -68,8 +68,8 @@ claude-code-blog-builder/
 │           └── infographic.png
 │
 └── docs/                            # 사용자 가이드 (≠ 이 spec/)
+    ├── explainer.md
     ├── setup-guide.md
-    ├── how-it-works.md
     └── troubleshooting.md
 ```
 
@@ -117,6 +117,7 @@ blog-researcher 에이전트
   ▼
 blog-writer 에이전트
   │ post.md + post.html 작성 (뉴스 배경→요약→해석→링크)
+  │ metadata.json 작성 (title, tags, meta_description, en_points: string[])
   └─ output/폴더/post.md 저장
          │
          │ [PostToolUse 훅 자동발사]
@@ -127,7 +128,8 @@ blog-writer 에이전트
   │
   ▼
 generate-images.js (Gemini API 또는 --prompt-only)
-  └─ output/폴더/images/{thumbnail,infographic}.png (2장)
+  │ 입력: --keyword, --points (한국어), --en-points ← metadata.json.en_points
+  └─ output/폴더/images/{thumbnail,infographic}.png (2장) 또는 *_prompt.txt (영문 프롬프트)
   │
   ▼
 metadata.json + guide.md + _index.json 업데이트

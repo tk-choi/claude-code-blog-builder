@@ -154,8 +154,10 @@ Claude Code에서 `/명령어 인자` 입력 시 해당 파일의 내용이 Clau
   │       └─ duplicate-check.js (6-gram Jaccard)
   │
   ├─ [STEP 3] generate-images.js
-  │     ├─ GEMINI_API_KEY 있을 경우: 2 PNG 자동 생성 (thumbnail, infographic)
-  │     └─ 없을 경우: --prompt-only → 프롬프트 txt 파일 출력
+  │     ├─ metadata.json에서 en_points 추출 → --en-points 전달
+  │     ├─ GEMINI_API_KEY 있을 경우: 2 PNG 자동 생성 (thumbnail 영문 컨셉, infographic 영문 포인트)
+  │     └─ 없을 경우: --prompt-only → thumbnail_prompt.txt / infographic_prompt.txt (영문 프롬프트)
+  │           preview.js가 자동으로 "복사 버튼 카드"로 렌더링
   │
   └─ [STEP 5] 최종 패키지
         ├─ guide.md 작성 (편집 가이드 + 원문 사실확인 체크리스트)
@@ -165,6 +167,7 @@ Claude Code에서 `/명령어 인자` 입력 시 해당 파일의 내용이 Clau
   - 제목 / 글자수 / 원문 출처
   - 품질검사 결과 / 유사도 결과
   - 이미지 생성 여부 (자동 or 프롬프트 출력)
+  - 이미지 없을 경우: preview.html에 프롬프트 카드 표시 (AI Studio/DALL-E/Midjourney에 붙여넣기 가능)
   - 발행 전 확인 항목 (원문 링크·수치 사실 여부)
   - 다음 단계: /blog-preview <폴더>
 ```
