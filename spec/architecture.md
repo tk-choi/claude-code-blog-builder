@@ -2,11 +2,11 @@
 
 ## 설계 원칙
 
-이 프로젝트가 기반하는 4가지 핵심 원칙이다. 수정 시 이 원칙을 깨지 않는 것이 권장된다.
+이 프로젝트가 기반하는 4가지 핵심 원칙이다.
 
 | 원칙 | 의미 | 왜 중요한가 |
 |------|------|------------|
-| **Single Source of Truth** | 회사 수치는 `knowledge/brand-facts.md` 한 곳에만 | AI 픽션 방지 — 다른 곳의 수치 사용 금지 |
+| **Single Source of Truth** | 블로거 정보는 `knowledge/brand-facts.md` 한 곳에만 | AI 픽션 방지 — 다른 곳의 정보 사용 금지 |
 | **외부 의존성 0** | npm install 불필요, Node 20+ 내장 모듈만 | 설치 없이 clone → 즉시 실행 |
 | **자동 검증** | PostToolUse 훅이 post.md 저장 시 품질검사 자동 실행 | 실수로 저품질 글 발행 방지 |
 | **사람 발행** | 자동 발행 기능 의도적으로 없음 | 저품질 콘텐츠 대량 발행 리스크 방지 |
@@ -25,11 +25,11 @@ claude-code-blog-builder/
 ├── .claude/
 │   ├── settings.json                # PostToolUse 훅 등록
 │   ├── commands/                    # 8개 /명령어 정의 (*.md)
-│   └── agents/                      # 5개 에이전트 프롬프트 (*.md)
+│   └── agents/                      # 4개 에이전트 프롬프트 (*.md)
 │
 ├── scripts/                         # 7개 Node.js 실행 스크립트
-│   ├── research.js                  # Naver API 키워드 리서치
-│   ├── generate-images.js           # Gemini API 이미지 생성 (4종)
+│   ├── research.js                  # Naver API 키워드 리서치 (선택)
+│   ├── generate-images.js           # Gemini API 이미지 생성 (2종) + --prompt-only
 │   ├── quality-check.js             # 7항목 품질 검사
 │   ├── duplicate-check.js           # 6-gram Jaccard 유사도 검사
 │   ├── hook-post-write.js           # PostToolUse 훅 라우터
@@ -37,20 +37,18 @@ claude-code-blog-builder/
 │   └── setup-tone-fetch.js          # 블로그 URL 본문 수집
 │
 ├── knowledge/                       # ⭐ Single Source of Truth
-│   ├── brand-facts.md               # 회사 수치·인증 (gitignored, /setup이 생성)
+│   ├── brand-facts.md               # 블로거 정보·톤 (gitignored, /setup이 생성)
 │   ├── brand-facts.template.md      # 공개 템플릿
 │   ├── banned-words.json            # 금칙어 목록 (gitignored)
 │   ├── banned-words.template.json   # 공개 템플릿
-│   ├── conversion-benchmarks.md     # 업계 벤치마크 (gitignored)
 │   ├── tone-samples/                # 실제 블로그 문체 샘플 (gitignored)
 │   │   └── real-blog-posts.txt      # /setup-tone이 채움
 │   └── patterns/                    # 글쓰기 패턴 가이드 (gitignored)
-│       └── writing-playbook.txt     # 12종 패턴 구조
+│       └── writing-playbook.txt
 │
 ├── templates/                       # 이미지 생성용 HTML 템플릿
 │   ├── thumbnail.html               # 16:9 썸네일
-│   ├── infographic.html             # 2:3 인포그래픽
-│   └── quote-card.html              # 1:1 인용 카드
+│   └── infographic.html             # 2:3 인포그래픽
 │
 ├── keyword-bank/                    # 카테고리별 시드 키워드
 │   ├── README.md                    # YAML 포맷 명세
@@ -67,9 +65,7 @@ claude-code-blog-builder/
 │       ├── quality-report.json
 │       └── images/
 │           ├── thumbnail.png
-│           ├── infographic.png
-│           ├── quote-card.png
-│           └── process.png
+│           └── infographic.png
 │
 └── docs/                            # 사용자 가이드 (≠ 이 spec/)
     ├── setup-guide.md
@@ -88,8 +84,8 @@ claude-code-blog-builder/
   │ /setup
   ▼
 setup-interviewer 에이전트
-  │ 7개 질문 인터뷰
-  ├─ knowledge/brand-facts.md 생성     ← 수치 SSoT
+  │ 6개 질문 인터뷰 (블로거 정보)
+  ├─ knowledge/brand-facts.md 생성     ← 블로거 정보 SSoT
   └─ knowledge/banned-words.json 수정  ← 금칙어
 
   │ /setup-tone
@@ -102,7 +98,6 @@ setup-tone-fetch.js
 setup-interviewer 에이전트
   ├─ keyword-bank/*.yml 생성
   ├─ knowledge/banned-words.json 도메인 단어 추가
-  ├─ knowledge/conversion-benchmarks.md 수치 추가
   └─ .env BRAND_NAME/COLORS 설정      ← 이미지 디자인 SSoT
 ```
 
@@ -110,18 +105,18 @@ setup-interviewer 에이전트
 
 ```
 사용자
-  │ /blog-new "키워드"
+  │ /blog-new "AI 뉴스 주제"
   ▼
 [사전 로드] brand-facts.md, tone-samples, patterns, banned-words.json, _index.json
   │
   ▼
 blog-researcher 에이전트
-  │ scripts/research.js (Naver API or WebSearch)
-  └─ output/폴더/research.json 저장
+  │ Exa MCP → WebSearch → research.js (선택)
+  └─ 리서치 브리프 반환
   │
   ▼
 blog-writer 에이전트
-  │ post.md + post.html 작성
+  │ post.md + post.html 작성 (뉴스 배경→요약→해석→링크)
   └─ output/폴더/post.md 저장
          │
          │ [PostToolUse 훅 자동발사]
@@ -131,12 +126,8 @@ blog-writer 에이전트
     └─ duplicate-check.js → 콘솔 경고
   │
   ▼
-generate-images.js (Gemini API)
-  └─ output/폴더/images/*.png (4장)
-  │
-  ▼ (의료/뷰티 키워드인 경우만)
-medical-law-checker 에이전트
-  └─ 위반 표현 리포트
+generate-images.js (Gemini API 또는 --prompt-only)
+  └─ output/폴더/images/{thumbnail,infographic}.png (2장)
   │
   ▼
 metadata.json + guide.md + _index.json 업데이트
@@ -151,15 +142,15 @@ metadata.json + guide.md + _index.json 업데이트
 
 | 변수 | 필수 | 용도 | 설정 주체 |
 |------|------|------|----------|
-| `GEMINI_API_KEY` | ✅ 필수 | 이미지 생성 (Gemini 3 Pro Image) | 사용자 수동 |
-| `NAVER_CLIENT_ID` | ⬜ 선택 | Naver Search API | 사용자 수동 |
+| `GEMINI_API_KEY` | ⬜ 선택 | 이미지 자동 생성 (없으면 `--prompt-only` 사용) | 사용자 수동 |
+| `NAVER_CLIENT_ID` | ⬜ 선택 | Naver Search API (없으면 건너뜀) | 사용자 수동 |
 | `NAVER_CLIENT_SECRET` | ⬜ 선택 | Naver Search API | 사용자 수동 |
-| `BRAND_NAME` | ⬜ 선택 | 이미지에 박힐 브랜드명 | `/setup-domain` 자동 |
+| `BRAND_NAME` | ⬜ 선택 | 이미지에 박힐 블로그명 | `/setup-domain` 자동 |
 | `BRAND_BG_COLOR` | ⬜ 선택 | 이미지 배경색 hex | `/setup-domain` 자동 |
 | `BRAND_FG_COLOR` | ⬜ 선택 | 이미지 본문색 hex | `/setup-domain` 자동 |
 | `BRAND_ACCENT` | ⬜ 선택 | 이미지 포인트색 hex | `/setup-domain` 자동 |
 
-Naver API 미설정 시: `research.js`가 오류를 던지고 Claude가 WebSearch로 수동 대체.
+Naver API 미설정 시: `research.js` 건너뜀, Exa MCP / WebSearch로 리서치.
 
 ---
 

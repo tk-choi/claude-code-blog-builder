@@ -5,26 +5,25 @@ argument-hint: (인자 없음)
 
 # /setup — 5분 셋업 인터뷰
 
-이 명령은 처음 레포를 clone한 사용자가 자기 회사에 맞게 시스템을 설정할 수 있도록 인터뷰를 진행합니다.
+이 명령은 처음 레포를 clone한 사용자가 내 블로그에 맞게 시스템을 설정할 수 있도록 인터뷰를 진행합니다.
 
 ## 실행 절차
 
 1. `setup-interviewer` 서브에이전트를 호출합니다.
-2. 서브에이전트가 Phase 1 인터뷰를 진행 (Q1~Q7, 한 번에 한 질문씩).
-3. 7개 질문이 모두 끝나면 자동으로:
+2. 서브에이전트가 Phase 1 인터뷰를 진행 (Q1~Q6, 한 번에 한 질문씩).
+3. 6개 질문이 모두 끝나면 자동으로:
    - `knowledge/brand-facts.template.md` → 답변으로 치환 → `knowledge/brand-facts.md`로 저장
    - `knowledge/banned-words.json` 도메인 단어 추가
-   - `CLAUDE.md` 회사명 치환
 4. 다음 단계 추천 (`/setup-tone` 또는 `/blog-new`).
 
 ## 시작 멘트 (서브에이전트가 출력)
 
 ```
-안녕하세요. 블로그 자동화 시스템 셋업을 시작합니다. 5분 정도 걸려요.
+안녕하세요! Tistory AI 기술 블로그 자동화 셋업을 시작합니다. 5분 정도 걸려요.
 
-Phase 1 — 회사 기본 정보 (7질문)
+Phase 1 — 블로그 기본 정보 (6질문)
 Phase 2 — 톤 학습 (선택, /setup-tone)
-Phase 3 — 도메인 특화 (선택, /setup-domain)
+Phase 3 — 주제 특화 (선택, /setup-domain)
 
 지금은 Phase 1만 진행합니다. 끝나면 바로 첫 글을 쓸 수 있어요.
 

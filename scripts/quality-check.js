@@ -58,11 +58,11 @@ function check(text, raw, keyword) {
     ).length;
     const totalWords = text.length / 2; // 한국어 대략 추정 (글자÷2)
     const density = (occurrences / totalWords) * 100;
-    const ok = occurrences >= 5 && occurrences <= 12;
+    const ok = occurrences >= 2 && occurrences <= 5;
     results.push({
       name: '키워드 빈도',
       pass: ok,
-      detail: `"${keyword}" ${occurrences}회 (권장 5~12회), 추정밀도 ${density.toFixed(2)}%`,
+      detail: `"${keyword}" ${occurrences}회 (권장 2~5회), 추정밀도 ${density.toFixed(2)}%`,
     });
   }
 
@@ -98,19 +98,21 @@ function check(text, raw, keyword) {
   const imgMarkers = (raw.match(/\[IMAGE:/g) || []).length;
   results.push({
     name: '이미지 마커',
-    pass: imgMarkers >= 3,
-    detail: `[IMAGE:] ${imgMarkers}개 (권장 ≥ 4)`,
+    pass: imgMarkers >= 2,
+    detail: `[IMAGE:] ${imgMarkers}개 (권장 ≥ 2)`,
   });
 
   // 5. 외부 링크
   const links = raw.match(/https?:\/\/[^\s"'<>)]+/g) || [];
   results.push({
     name: '외부 링크',
-    pass: links.length === 0,
+    pass: links.length <= 3,
     detail:
-      links.length === 0
-        ? '외부 링크 없음'
-        : `${links.length}개 발견 (저품질 트리거): ${links.slice(0, 3).join(', ')}`,
+      links.length <= 3
+        ? links.length === 0
+          ? '외부 링크 없음'
+          : `외부 링크 ${links.length}개 (원문 링크 포함 허용)`
+        : `${links.length}개 발견 — 3개 이하로 줄여주세요: ${links.slice(0, 3).join(', ')}`,
   });
 
   // 6. 금칙어

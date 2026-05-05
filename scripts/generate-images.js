@@ -14,8 +14,6 @@
  *   GEMINI_API_KEY=xxx node scripts/generate-images.js \
  *     --title "..." --keyword "..." \
  *     --points "p1|||p2|||p3" \
- *     --quote "..." \
- *     --steps "s1|||s2|||s3" \
  *     --output "output/folder/images"
  */
 
@@ -96,35 +94,6 @@ function infographicPrompt({ keyword, points }) {
   ].join('\n');
 }
 
-function quoteCardPrompt({ quote, keyword }) {
-  return [
-    `Create a 1:1 square Korean quote card — clean editorial typography focus.`,
-    `Small label at top in warm-orange: "${keyword}"`,
-    `Center the large Korean quote in bold sans-serif (not serif), perfectly legible: "${quote}"`,
-    `Bottom-right signature: "— ${BRAND_NAME}"`,
-    `Oversized decorative quotation marks as faint background element (very low opacity).`,
-    BRAND_STYLE,
-    `No people, no photographic elements.`,
-  ].join('\n');
-}
-
-function processPrompt({ keyword, steps }) {
-  const numberedSteps = steps
-    .slice(0, 6)
-    .map((s, i) => `${i + 1}) ${s}`)
-    .join('   →   ');
-  return [
-    `Create a 4:3 Korean horizontal process flow diagram — clean schematic, not an illustration.`,
-    `Top title in Korean: "${keyword} 진행 프로세스"`,
-    `Render this as a horizontal row of numbered pill-shaped nodes connected by arrows, each node containing its Korean label clearly:`,
-    numberedSteps,
-    `Each node: rounded rectangle with number badge + Korean label. Arrows between nodes in warm-orange.`,
-    `Bottom-right corner: "${BRAND_NAME}"`,
-    BRAND_STYLE,
-    `Pure schematic diagram, no background imagery, no people.`,
-  ].join('\n');
-}
-
 // ────────────────────────────────────────────────
 // Gemini 호출
 // ────────────────────────────────────────────────
@@ -166,18 +135,19 @@ async function generateOne(prompt) {
 // ────────────────────────────────────────────────
 async function main() {
   const args = parseArgs(process.argv);
-  const { title, keyword, quote, output } = args;
+  const { title, keyword, output } = args;
   const points = splitList(args.points);
-  const steps = splitList(args.steps);
+  const promptOnly = !!args['prompt-only'];
 
   if (!title || !keyword || !output) {
     console.error(
-      'Usage: --title <t> --keyword <k> --output <dir> [--points a|||b] [--quote q] [--steps a|||b]'
+      'Usage: --title <t> --keyword <k> --output <dir> [--points a|||b] [--prompt-only]'
     );
     process.exit(2);
   }
-  if (!process.env.GEMINI_API_KEY) {
-    console.error('ERROR: GEMINI_API_KEY environment variable is required.');
+  if (!promptOnly && !process.env.GEMINI_API_KEY) {
+    console.error('ERROR: GEMINI_API_KEY is required for image generation.');
+    console.error('Tip: Use --prompt-only to output prompts without calling the API.');
     process.exit(1);
   }
 
@@ -192,21 +162,18 @@ async function main() {
         points: points.length ? points : [keyword],
       }),
     },
-    {
-      name: 'quote-card',
-      prompt: quoteCardPrompt({
-        quote: quote || title,
-        keyword,
-      }),
-    },
-    {
-      name: 'process',
-      prompt: processPrompt({
-        keyword,
-        steps: steps.length ? steps : ['리서치', '기획', '제작', '검수'],
-      }),
-    },
   ];
+
+  if (promptOnly) {
+    for (const job of jobs) {
+      const promptPath = join(output, `${job.name}_prompt.txt`);
+      await writeFile(promptPath, job.prompt, 'utf8');
+      console.log(`  ✓ ${promptPath}`);
+    }
+    console.log(`\nDone: ${jobs.length} prompts saved to ${output}`);
+    console.log('→ Copy each prompt into Google AI Studio (aistudio.google.com) or Gemini to generate images.');
+    return;
+  }
 
   let okCount = 0;
   const errors = [];

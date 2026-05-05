@@ -6,21 +6,22 @@
 
 ## 5분 요약
 
-이 프로젝트는 **Claude Code에서 직접 실행하는 네이버 블로그 콘텐츠 자동화 도구**다.
+이 프로젝트는 **Claude Code에서 직접 실행하는 Tistory AI 뉴스 블로그 자동화 도구**다.
 
 | 항목 | 내용 |
 |------|------|
 | 런타임 | Node.js 20+ (npm install 불필요) |
-| 외부 API | Naver Search API (선택), Gemini API (필수) |
-| 진입점 | `/blog-new "키워드"` 한 줄 |
+| 리서치 | Exa MCP (1순위) → WebSearch (2순위) → Naver API (선택) |
+| 이미지 | Gemini API 자동 생성 또는 `--prompt-only`로 프롬프트 출력 |
+| 진입점 | `/blog-new "AI 뉴스 주제"` 한 줄 |
 | 핵심 설계 | `knowledge/` 폴더가 Single Source of Truth |
 | 자동화 | PostToolUse 훅이 품질검사를 자동 실행 |
-| 발행 | 사람이 직접 네이버 스마트에디터에 붙여넣기 (자동 발행 없음) |
+| 발행 | 사람이 직접 Tistory 에디터에 붙여넣기 (자동 발행 없음) |
 
 ### 빠른 시작 플로우
 
 ```
-처음 사용 → /setup (5분 인터뷰) → /setup-tone (URL로 톤 학습) → /blog-new "키워드"
+처음 사용 → /setup (5분 인터뷰) → /setup-tone (URL로 톤 학습) → /blog-new "AI 뉴스 주제"
 ```
 
 ---
@@ -49,10 +50,10 @@ claude-code-blog-builder/
 ├── .claude/
 │   ├── settings.json        ← PostToolUse 훅 등록
 │   ├── commands/            ← /blog-new 등 8개 명령어 정의
-│   └── agents/              ← blog-writer 등 5개 에이전트 프롬프트 ★수정 포인트
+│   └── agents/              ← blog-writer 등 4개 에이전트 프롬프트 ★수정 포인트
 │
 ├── scripts/                 ← 7개 Node.js 스크립트 (실제 로직)
-├── knowledge/               ← 브랜드 수치·톤·금칙어 SSoT (/setup이 채움)
+├── knowledge/               ← 블로거 정보·톤·금칙어 SSoT (/setup이 채움)
 ├── keyword-bank/            ← 카테고리별 시드 키워드 YAML
 ├── templates/               ← 이미지 생성용 HTML 템플릿
 └── output/                  ← 생성된 글·이미지 결과물 (gitignored)
@@ -69,7 +70,6 @@ claude-code-blog-builder/
 | 글쓰기 규칙 변경 | `.claude/agents/blog-writer.md` |
 | 리서치 방법 변경 | `.claude/agents/blog-researcher.md` |
 | 품질 기준 변경 | `.claude/agents/blog-quality-reviewer.md` |
-| 의료법 검사 규칙 | `.claude/agents/medical-law-checker.md` |
 | 새 에이전트 추가 | `.claude/agents/<name>.md` 새 파일 생성 |
 | 파이프라인 흐름 변경 | `.claude/commands/blog-new.md` |
 
