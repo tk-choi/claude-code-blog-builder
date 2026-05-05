@@ -52,6 +52,7 @@ API 키 없으면 건너뜀 (에러 무시).
 EN_POINTS=$(node -e "try{const m=require('./output/<폴더>/metadata.json');console.log((m.en_points||[]).join('|||'))}catch{console.log('')}")
 ```
 
+
 **옵션 A — 자동 생성** (GEMINI_API_KEY 있을 경우):
 ```bash
 set -a && . ./.env && set +a && node scripts/generate-images.js \
