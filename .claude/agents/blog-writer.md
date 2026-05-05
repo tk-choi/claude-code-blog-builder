@@ -47,7 +47,10 @@ tools: Read, Write, Edit, Bash, Grep
 
 - `output/<날짜>_<키워드>/post.md`
 - `output/<날짜>_<키워드>/post.html` (Tistory 붙여넣기용)
-- `output/<날짜>_<키워드>/metadata.json`
+- `output/<날짜>_<키워드>/metadata.json` — 아래 필드를 반드시 포함:
+  - `title`, `tags`, `meta_description` (기존)
+  - `en_points`: 이미지 생성용 영어 핵심 포인트 배열 (각 5~10 단어, 3~5개)
+    예: `["Token budget-based loop control", "ChatGPT account required", "Session restart vs persistent thread"]`
 
 작성 후 훅이 자동으로 품질·유사도 검사를 돌립니다. 경고가 뜨면 Edit으로 수정.
 

@@ -132,7 +132,7 @@ function htmlToPlain(html) {
     .trim();
 }
 
-function renderPreviewHtml({ folder, title, meta, sections, images }) {
+function renderPreviewHtml({ folder, title, meta, sections, images, prompts = [] }) {
   // 데이터를 인덱스 기반으로 — onclick에 HTML 직접 박지 않음 (스크립트 깨짐 방지)
   const sectionsData = sections.map((s) => ({
     heading: s.heading,
@@ -175,6 +175,21 @@ function renderPreviewHtml({ folder, title, meta, sections, images }) {
 </div>`
     )
     .join('\n');
+
+  const promptsHtml = (images.length === 0 && prompts.length > 0)
+    ? prompts
+        .map(
+          (p, i) => `
+<div class="prompt-card">
+  <div class="prompt-header">
+    <span class="prompt-name">🖼 ${escapeHtmlAttr(p.name)} 생성 프롬프트</span>
+    <button onclick="copyPrompt(${i}, this)">📋 프롬프트 복사</button>
+  </div>
+  <pre class="prompt-text">${escapeHtmlAttr(p.content)}</pre>
+</div>`
+        )
+        .join('\n')
+    : '';
 
   const tagsHtml = (meta.tags || [])
     .map((t) => `<span class="tag">#${escapeHtmlAttr(t)}</span>`)
@@ -481,6 +496,44 @@ function renderPreviewHtml({ folder, title, meta, sections, images }) {
       margin-bottom: 14px;
     }
 
+    /* ───── Prompt cards ───── */
+    .prompt-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+      margin-bottom: 12px;
+    }
+    .prompt-card:last-child { margin-bottom: 0; }
+    .prompt-header {
+      padding: 10px 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      background: #fafaf6;
+      border-bottom: 1px solid var(--border);
+    }
+    .prompt-name {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--muted);
+      flex: 1;
+      min-width: 0;
+    }
+    .prompt-text {
+      padding: 14px;
+      font-size: 12px;
+      line-height: 1.6;
+      color: var(--fg);
+      white-space: pre-wrap;
+      word-break: break-all;
+      background: var(--bg);
+      margin: 0;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+
     /* ───── Checklist ───── */
     .checklist label {
       display: flex;
@@ -583,9 +636,10 @@ function renderPreviewHtml({ folder, title, meta, sections, images }) {
       </div>
 
       <div class="card">
-        <h2>🖼 이미지 ${images.length}장</h2>
-        <button class="download-all" onclick="downloadAll()">⬇ 4장 일괄 다운로드</button>
+        <h2>🖼 이미지 ${images.length > 0 ? images.length + '장' : `(프롬프트 ${prompts.length}개)`}</h2>
+        ${images.length > 0 ? `<button class="download-all" onclick="downloadAll()">⬇ ${images.length}장 일괄 다운로드</button>` : ''}
         ${imagesHtml}
+        ${promptsHtml}
       </div>
 
       <div class="card checklist">
@@ -594,7 +648,7 @@ function renderPreviewHtml({ folder, title, meta, sections, images }) {
         <label><input type="checkbox"><span>카테고리 선택</span></label>
         <label><input type="checkbox"><span>본문 단락 복사·붙여넣기 (위에서부터 순서대로)</span></label>
         <label><input type="checkbox"><span>표는 스마트에디터에서 직접 생성</span></label>
-        <label><input type="checkbox"><span>이미지 4장 본문에 업로드</span></label>
+        <label><input type="checkbox"><span>${images.length > 0 ? `이미지 ${images.length}장 본문에 업로드` : '이미지 생성 후 본문에 업로드 (현재 프롬프트만 있음)'}</span></label>
         <label><input type="checkbox"><span>썸네일 = 대표 이미지로 등록</span></label>
         <label><input type="checkbox"><span>태그 10개 입력</span></label>
         <label><input type="checkbox"><span>맞춤법 검사</span></label>
@@ -606,12 +660,13 @@ function renderPreviewHtml({ folder, title, meta, sections, images }) {
 
   <div class="toast" id="toast">복사됨!</div>
 
-  <script id="bootData" type="application/json">${JSON.stringify({ sections: sectionsData, meta: metaInline, images }).replace(/<\/script/gi, '<\\/script')}</script>
+  <script id="bootData" type="application/json">${JSON.stringify({ sections: sectionsData, meta: metaInline, images, prompts }).replace(/</g, '\\u003c')}</script>
   <script>
     const BOOT = JSON.parse(document.getElementById('bootData').textContent);
     const SECTIONS = BOOT.sections;
     const META = BOOT.meta;
     const IMAGES = BOOT.images;
+    const PROMPTS = BOOT.prompts || [];
 
     function showToast(msg, ok = true) {
       const t = document.getElementById('toast');
@@ -719,6 +774,17 @@ function renderPreviewHtml({ folder, title, meta, sections, images }) {
       }
     }
 
+    async function copyPrompt(idx, btn) {
+      const p = PROMPTS[idx];
+      const ok = await copyPlainText(p.content);
+      if (ok) {
+        flashBtn(btn);
+        showToast('프롬프트 복사 완료 — AI Studio / DALL-E / Midjourney 등에 붙여넣으세요');
+      } else {
+        showToast('복사 실패', false);
+      }
+    }
+
     async function downloadAll() {
       for (const img of IMAGES) {
         const a = document.createElement('a');
@@ -783,9 +849,21 @@ async function main() {
     console.warn('⚠️  metadata.json 없음 — 빈 메타로 진행');
   }
 
+  let prompts = [];
   try {
     const all = await readdir(join(folder, 'images'));
     images = all.filter((f) => /\.(png|jpg|jpeg|webp)$/i.test(f)).sort();
+    if (images.length === 0) {
+      const promptFiles = all.filter((f) => f.endsWith('_prompt.txt')).sort();
+      for (const pf of promptFiles) {
+        try {
+          const content = await readFile(join(folder, 'images', pf), 'utf8');
+          prompts.push({ name: pf.replace('_prompt.txt', ''), content });
+        } catch (e) {
+          console.warn(`⚠️  ${pf} 읽기 실패: ${e.message}`);
+        }
+      }
+    }
   } catch {
     images = [];
     console.warn('⚠️  images/ 폴더 없음');
@@ -800,6 +878,7 @@ async function main() {
     meta,
     sections,
     images,
+    prompts,
   });
 
   const outPath = join(folder, 'preview.html');
@@ -819,7 +898,7 @@ async function main() {
   console.log(`\n💡 사용법:`);
   console.log(`   1. 메타데이터 카드에서 제목·태그 복사 → 스마트에디터에 입력`);
   console.log(`   2. 본문 섹션을 위에서부터 순서대로 "서식 포함 복사" → 붙여넣기`);
-  console.log(`   3. 이미지 4장 일괄 다운로드 → 본문에 업로드`);
+  console.log(`   3. 이미지 ${images.length > 0 ? images.length + '장' : `프롬프트 ${prompts.length}개`} 다운로드/복사 → 본문에 업로드`);
   console.log(`   4. 체크리스트 따라가며 발행`);
 }
 

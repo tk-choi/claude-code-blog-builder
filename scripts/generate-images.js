@@ -56,37 +56,40 @@ const FG_COLOR   = process.env.BRAND_FG_COLOR || '#1A1A1A';
 const ACCENT     = process.env.BRAND_ACCENT   || '#D97A3A';
 
 const BRAND_STYLE = [
-  'Minimal Korean editorial infographic design',
-  `off-white background (${BG_COLOR}), deep charcoal (${FG_COLOR}) text, single point color (${ACCENT})`,
-  'premium clean sans-serif typography (Pretendard-like)',
-  'generous whitespace, clear visual hierarchy',
-  'information-diagram first: prefer charts, tables, flow nodes, comparison layouts over decorative illustration',
+  'Minimal editorial infographic design',
+  `Off-white background (${BG_COLOR}), deep charcoal (${FG_COLOR}) text, single accent color (${ACCENT})`,
+  'Premium clean sans-serif typography, generous whitespace, clear visual hierarchy',
+  'Information-diagram first: prefer charts, tables, flow nodes, comparison layouts over decorative illustration',
   'NO people, NO stock-photo aesthetic, NO random clutter, NO fake logos, NO watermark, NO heavy gradient or glow',
-  'Korean text must render perfectly legible and sharp',
   `The only brand name shown is exactly "${BRAND_NAME}" — use this exact spelling and capitalization`,
 ].join('. ');
 
 function thumbnailPrompt({ title, keyword }) {
   return [
-    `Create a 16:9 Korean blog thumbnail — editorial infographic style, not an illustration.`,
-    `Large bold Korean headline (must be perfectly legible): "${title}"`,
+    `Create a 16:9 blog thumbnail for a Korean tech blog post.`,
+    `Topic: "${keyword}" — a blog post reviewing and analyzing this AI developer tool or topic.`,
     `Small pill-shaped tag in top-left corner with text: "${keyword}"`,
     `Bottom-right corner small label: "${BRAND_NAME}"`,
-    `Add one subtle visual element that hints at data/diagram (e.g., a small bar chart, numbered badge, or flow arrow) — not a photo.`,
+    `Visual concept: minimal abstract diagram representing "${keyword}" — use split comparison panel, parallel flow arrows, or circuit-style nodes. No text overlay required in the image itself.`,
+    `Add one subtle data/diagram element (e.g., comparison bars, flow arrows, numbered badge) — not a photo, not a person.`,
     BRAND_STYLE,
-    `Layout: headline left-aligned, diagram element right side, balanced negative space.`,
+    `Layout: diagram element right side, balanced negative space on left suitable for text overlay.`,
   ].join('\n');
 }
 
-function infographicPrompt({ keyword, points }) {
-  const numbered = points
+function infographicPrompt({ keyword, points, enPoints }) {
+  const pts = (enPoints && enPoints.length > 0) ? enPoints : points;
+  if (enPoints && enPoints.length > 0 && enPoints.length !== points.length && points.length > 0) {
+    console.warn(`⚠️  en-points(${enPoints.length}개) 와 points(${points.length}개) 수가 다릅니다. en-points 기준으로 렌더링합니다.`);
+  }
+  const numbered = pts
     .slice(0, 5)
     .map((p, i) => `${i + 1}. ${p}`)
     .join('\n');
   return [
-    `Create a 2:3 vertical Korean infographic poster — pure information diagram, no decorative art.`,
-    `Top title in Korean: "${keyword} 핵심 포인트"`,
-    `Below the title, render these items as a vertical stack of numbered cards (rounded rectangles with a left accent bar), each with the number prominently displayed and the Korean text rendered clearly:`,
+    `Create a 2:3 vertical infographic poster — pure information diagram, no decorative art.`,
+    `Top title: "${keyword} — Key Points"`,
+    `Below the title, render these items as a vertical stack of numbered cards (rounded rectangles with a left accent bar), each with the number prominently displayed and the text rendered clearly:`,
     numbered,
     `Bottom footer center: "${BRAND_NAME}"`,
     BRAND_STYLE,
@@ -137,6 +140,7 @@ async function main() {
   const args = parseArgs(process.argv);
   const { title, keyword, output } = args;
   const points = splitList(args.points);
+  const enPoints = splitList(args['en-points']);
   const promptOnly = !!args['prompt-only'];
 
   if (!title || !keyword || !output) {
@@ -160,6 +164,7 @@ async function main() {
       prompt: infographicPrompt({
         keyword,
         points: points.length ? points : [keyword],
+        enPoints,
       }),
     },
   ];
