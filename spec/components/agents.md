@@ -68,7 +68,7 @@ tools: <사용 가능한 도구 목록>
 | **Tools** | `Read, Write, Edit, Bash, Grep` |
 | **호출 시점** | `/blog-new` (STEP 2) |
 | **Input** | 리서치 브리프 (blog-researcher 출력) |
-| **Output** | `post.md`, `post.html`, `metadata.json` |
+| **Output** | `post.md`, `post.html`, `metadata.json` (제목·태그·메타설명·**`en_points`** 포함) |
 
 **글쓰기 전 필수 로드 파일** (이 순서대로):
 1. `knowledge/brand-facts.md` — 블로거 정보·톤 (SSoT)
@@ -91,6 +91,7 @@ tools: <사용 가능한 도구 목록>
 - `[IMAGE: 설명]` 마커 최소 2개 (썸네일용, 인포그래픽용)
 - 외부 링크 ≤ 3개, 금칙어 0건, 표 ≥ 1개
 - 확인되지 않은 수치 사용 금지 (원문 수치만)
+- `metadata.json`에 영어 핵심 포인트(`en_points: string[]`, 각 5~10 단어, 3~5개) 포함 — `generate-images.js`의 `--en-points`로 전달됨
 
 **브랜드팩트 미완성 감지**: `brand-facts.md`가 `[PLACEHOLDER]`로 시작하면 글 작성 중단 + `/setup` 실행 안내.
 
@@ -211,7 +212,8 @@ tools: Read, Write, Bash
     │
     ├─ [STEP 2] blog-writer
     │       ├─ knowledge/ 파일 읽기
-    │       └─ post.md 저장 → [자동 훅] quality-check + duplicate-check
+    │       ├─ post.md 저장 → [자동 훅] quality-check + duplicate-check
+    │       └─ metadata.json.en_points → STEP 3 generate-images.js --en-points
     │
     └─ [독립] setup-interviewer ← /setup, /setup-tone, /setup-domain
 ```

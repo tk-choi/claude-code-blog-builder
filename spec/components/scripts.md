@@ -60,19 +60,24 @@ total < 30,000  → "낮음" (정면 공략)
 
 **입력**:
 ```bash
+# 사전: metadata.json에서 en_points 추출 (없으면 빈 문자열)
+EN_POINTS=$(node -e "try{const m=require('./output/<폴더>/metadata.json');console.log((m.en_points||[]).join('|||'))}catch{console.log('')}")
+
 # 자동 생성 (GEMINI_API_KEY 필요)
 node scripts/generate-images.js \
   --title "글 제목" \
   --keyword "키워드" \
   --points "포인트1|||포인트2|||포인트3" \
-  --output "output/폴더/images"
+  --en-points "$EN_POINTS" \
+  --output "output/<폴더>/images"
 
 # 프롬프트 출력 (API 키 불필요)
 node scripts/generate-images.js \
   --title "글 제목" \
   --keyword "키워드" \
   --points "포인트1|||포인트2|||포인트3" \
-  --output "output/폴더/images" \
+  --en-points "$EN_POINTS" \
+  --output "output/<폴더>/images" \
   --prompt-only
 ```
 
@@ -85,17 +90,22 @@ node scripts/generate-images.js \
 
 **구분자**: 여러 값 전달 시 `|||` (파이프 3개)로 구분
 
+**`--en-points`**: 이미지 생성용 영어 핵심 포인트 (5~10 단어 × 3~5개). `metadata.json`의 `en_points` 필드에서 추출. 비어있으면 `--points`(한국어)를 폴백 사용.
+
 **--prompt-only 동작**:
 - API 호출 없이 영문 이미지 프롬프트 텍스트 파일 출력
 - `thumbnail_prompt.txt`, `infographic_prompt.txt` 생성
-- Google AI Studio (aistudio.google.com)에 직접 붙여넣기 가능
+- Google AI Studio / DALL-E / Midjourney 등 범용 사용 가능
+- 프롬프트 텍스트는 모두 영문 (다국어 이미지 생성 도구 호환)
 
 **생성 이미지 2종**:
 
 | 파일 | 비율 | 구성 요소 |
 |------|------|----------|
-| `thumbnail.png` | 16:9 | `--title`, `--keyword`, 브랜드명 |
-| `infographic.png` | 2:3 | `--points` (3~5개 항목) |
+| `thumbnail.png` | 16:9 | `--keyword`(그대로 사용), 브랜드명, 영문 컨셉 일러스트 |
+| `infographic.png` | 2:3 | `--en-points` 우선, 없으면 `--points` 폴백 (3~5개 항목) |
+
+> 썸네일은 키워드 기반 영문 컨셉 일러스트로 생성. 한국어 제목 텍스트는 이미지에 렌더링하지 않음 (다국어 호환성).
 
 **출력**: `output/<폴더>/images/{thumbnail,infographic}.png`
 
@@ -215,8 +225,11 @@ node scripts/preview.js --folder output/폴더 [--no-open]
 3. `post.html`을 `<h2>` 단위로 섹션 분할
 4. 섹션별 복사 버튼 + 다운로드 버튼 HTML 생성
 5. `output/폴더/images/*.png` 이미지 목록 확인
-6. self-contained HTML 조립 (외부 의존성 없음)
-7. `open` (macOS) / `xdg-open` (Linux) / `start` (Windows)으로 브라우저 오픈
+6. 이미지가 0장일 때만 폴백: `output/폴더/images/*_prompt.txt` 스캔
+7. 이미지가 없고 프롬프트 파일만 있으면 → 프롬프트 카드 (텍스트 + 복사 버튼) 렌더링
+8. 섹션 헤더는 `images.length`에 따라 동적: 이미지 N장 / (프롬프트 N개)
+9. self-contained HTML 조립 (외부 의존성 없음)
+10. `open` (macOS) / `xdg-open` (Linux) / `start` (Windows)으로 브라우저 오픈
 
 **출력**: `output/<폴더>/preview.html`
 
