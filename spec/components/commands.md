@@ -43,7 +43,8 @@ Claude Code에서 `/명령어 인자` 입력 시 해당 파일의 내용이 Clau
   │
   └─ setup-interviewer 에이전트 호출 (Phase 1)
         │
-        ├─ Q1~Q7 순서대로 질문 (한 번에 하나씩)
+        ├─ Q1~Q6 순서대로 질문 (한 번에 하나씩)
+        │   (블로그명/필명, 소개, 주력 주제, 스타일, 독자, 금지 단어)
         │
         └─ 완료 후 자동 실행:
               ├─ knowledge/brand-facts.template.md 읽기
@@ -52,10 +53,6 @@ Claude Code에서 `/명령어 인자` 입력 시 해당 파일의 내용이 Clau
               ├─ knowledge/banned-words.json 도메인 단어 추가
               └─ 다음 단계 안내 (A: /blog-new / B: /setup-tone / C: /setup-domain)
 ```
-
-**완료 결과물**:
-- `knowledge/brand-facts.md` (신규 생성)
-- `knowledge/banned-words.json` (도메인 단어 추가)
 
 ---
 
@@ -83,13 +80,8 @@ Claude Code에서 `/명령어 인자` 입력 시 해당 파일의 내용이 Clau
                 --output "knowledge/tone-samples/real-blog-posts.txt"
               │
               ├─ 수집 결과 확인 (목표 80KB+)
-              ├─ 시그니처 문장 5개 추출 → 사용자 검증
-              └─ CLAUDE.md에 "톤 시그니처" 섹션 추가
+              └─ 시그니처 문장 5개 추출 → 사용자 검증
 ```
-
-**실패 처리**:
-- 일부 URL 실패 → 성공한 것으로 진행
-- 전체 실패 → 수동 모드 안내 (직접 복사해서 `real-blog-posts.txt`에 붙여넣기)
 
 ---
 
@@ -98,7 +90,7 @@ Claude Code에서 `/명령어 인자` 입력 시 해당 파일의 내용이 Clau
 | 항목 | 내용 |
 |------|------|
 | **파일** | `.claude/commands/setup-domain.md` |
-| **설명** | 카테고리별 키워드뱅크·벤치마크·금칙어·이미지 시스템 설정 |
+| **설명** | 카테고리별 키워드뱅크·금칙어·이미지 시스템 설정 |
 | **인자** | 없음 |
 | **사전 조건** | `/setup` 완료 필수 |
 
@@ -108,25 +100,16 @@ Claude Code에서 `/명령어 인자` 입력 시 해당 파일의 내용이 Clau
   │
   └─ setup-interviewer 에이전트 호출 (Phase 3)
         │
-        ├─ knowledge/brand-facts.md에서 주력 카테고리 읽기
+        ├─ knowledge/brand-facts.md에서 주력 주제 읽기
         │
-        ├─ 카테고리별 순회 (각 카테고리당 3질문):
+        ├─ 주제별 순회 (각 주제당):
         │     ├─ Q1: 주요 키워드 5~10개 → keyword-bank/{slug}.yml 생성
-        │     ├─ Q2: 법령/규제 단어 → banned-words.json 추가
-        │     └─ Q3: 업계 벤치마크 수치 → conversion-benchmarks.md 업데이트
+        │     └─ Q2: 피해야 할 표현 → banned-words.json 추가
         │
         └─ 이미지 디자인 시스템 (선택):
               ├─ 브랜드 컬러 3개 (배경/메인/포인트, hex)
-              ├─ 폰트 스타일
-              ├─ 로고 텍스트
               └─ .env 파일에 BRAND_NAME, BRAND_BG_COLOR, BRAND_FG_COLOR, BRAND_ACCENT 저장
 ```
-
-**완료 결과물**:
-- `keyword-bank/<카테고리>.yml` (카테고리당 1개)
-- `knowledge/banned-words.json` 업데이트
-- `knowledge/conversion-benchmarks.md` 업데이트
-- `.env` 브랜드 시스템 변수
 
 ---
 
@@ -137,14 +120,14 @@ Claude Code에서 `/명령어 인자` 입력 시 해당 파일의 내용이 Clau
 | 항목 | 내용 |
 |------|------|
 | **파일** | `.claude/commands/blog-new.md` |
-| **설명** | 키워드 하나로 블로그 글 패키지 풀 파이프라인 실행 |
-| **인자** | `<키워드>` (예: `/blog-new "병원 마케팅"`) |
-| **사전 조건** | `/setup` 완료 필수, `GEMINI_API_KEY` 환경변수 |
+| **설명** | AI 뉴스 주제 하나로 블로그 글 패키지 풀 파이프라인 실행 |
+| **인자** | `<키워드>` (예: `/blog-new "Claude 4.5 출시"`) |
+| **사전 조건** | `/setup` 완료 필수 |
 
 **실행 흐름** (가장 중요한 명령어):
 
 ```
-/blog-new "키워드"
+/blog-new "AI 뉴스 주제"
   │
   ├─ [사전 체크] knowledge/brand-facts.md placeholder 확인
   │     └─ placeholder 상태 → 중단 + /setup 안내
@@ -157,11 +140,11 @@ Claude Code에서 `/명령어 인자` 입력 시 해당 파일의 내용이 Clau
   │     └─ output/_index.json (있을 경우)
   │
   ├─ [STEP 1] blog-researcher 에이전트
-  │     └─ research.js 실행 or WebSearch 대체
+  │     └─ Exa MCP → WebSearch → research.js(선택) 순서로 리서치
   │
   ├─ [STEP 2] blog-writer 에이전트
-  │     ├─ post.md 작성 (1,500~3,000자)
-  │     ├─ post.html 작성 (스마트에디터용)
+  │     ├─ post.md 작성 (1,500~2,000자, 뉴스 배경→요약→해석→링크)
+  │     ├─ post.html 작성 (Tistory 에디터용)
   │     └─ metadata.json 저장
   │           │
   │           │ [PostToolUse 훅 자동 발사 — post.md 저장 시]
@@ -171,19 +154,18 @@ Claude Code에서 `/명령어 인자` 입력 시 해당 파일의 내용이 Clau
   │       └─ duplicate-check.js (6-gram Jaccard)
   │
   ├─ [STEP 3] generate-images.js
-  │     └─ Gemini API → 4 PNG (thumbnail, infographic, quote-card, process)
-  │
-  ├─ [STEP 4, 조건부] medical-law-checker 에이전트
-  │     └─ 의료/뷰티 키워드일 때만 호출
+  │     ├─ GEMINI_API_KEY 있을 경우: 2 PNG 자동 생성 (thumbnail, infographic)
+  │     └─ 없을 경우: --prompt-only → 프롬프트 txt 파일 출력
   │
   └─ [STEP 5] 최종 패키지
-        ├─ guide.md 작성 (편집 가이드 + 사실확인 체크리스트)
+        ├─ guide.md 작성 (편집 가이드 + 원문 사실확인 체크리스트)
         └─ output/_index.json 업데이트 (새 글 항목 추가)
 
 완료 후 보고:
-  - 제목 / 글자수 / 패턴 / 톤 변주
+  - 제목 / 글자수 / 원문 출처
   - 품질검사 결과 / 유사도 결과
-  - 이미지 4장 생성 여부
+  - 이미지 생성 여부 (자동 or 프롬프트 출력)
+  - 발행 전 확인 항목 (원문 링크·수치 사실 여부)
   - 다음 단계: /blog-preview <폴더>
 ```
 
@@ -194,26 +176,22 @@ Claude Code에서 `/명령어 인자` 입력 시 해당 파일의 내용이 Clau
 | 항목 | 내용 |
 |------|------|
 | **파일** | `.claude/commands/blog-research.md` |
-| **설명** | 키워드 리서치만 실행 (글 작성 없음) |
+| **설명** | AI 뉴스 리서치만 실행 (글 작성 없음) |
 | **인자** | `<키워드>` |
-| **호출 에이전트** | 없음 (직접 스크립트 실행) |
 
 **실행 흐름**:
 ```
-/blog-research "키워드"
+/blog-research "AI 뉴스 주제"
   │
-  ├─ research.js 실행:
-  │     node scripts/research.js --keyword "$ARGUMENTS"
+  ├─ Exa MCP / WebSearch / research.js 순서로 리서치
   │
-  ├─ API 실패 시 WebSearch 대체
-  │
-  └─ 분석 리포트 출력:
-        - 경쟁도 평가 (높음/보통/낮음)
-        - 추천 롱테일 키워드 5~8개
-        - 추천 패턴 (12종 중)
-        - 피해야 할 제목 유형
+  └─ 리서치 브리프 출력:
+        - 선택한 뉴스 (제목, 출처, URL)
+        - 핵심 포인트 3~5개
+        - 해석 각도 제안
+        - 추천 제목 후보
 
-※ 글 작성 안함. 사용자가 "써줘"라고 할 때 /blog-new로 진행.
+※ 글 작성 안함. "써줘"라고 할 때 /blog-new로 진행.
 ```
 
 ---
@@ -227,19 +205,15 @@ Claude Code에서 `/명령어 인자` 입력 시 해당 파일의 내용이 Clau
 | **파일** | `.claude/commands/blog-quality.md` |
 | **설명** | 특정 글 폴더의 품질검사·유사도검사 재실행 |
 | **인자** | `<폴더명 또는 경로>` |
-| **호출 에이전트** | 없음 (직접 스크립트 실행) |
 
 **실행 흐름**:
 ```
-/blog-quality "2026-04-08_병원마케팅"
+/blog-quality "2026-05-05_claude45"
   │
   ├─ 경로 추정: "폴더명" → "output/폴더명/post.md"
   │
-  ├─ quality-check.js 실행:
-  │     node scripts/quality-check.js --file "output/.../post.md" --keyword "<폴더명에서 추출>"
-  │
-  ├─ duplicate-check.js 실행:
-  │     node scripts/duplicate-check.js --file "output/.../post.md"
+  ├─ quality-check.js 실행
+  ├─ duplicate-check.js 실행
   │
   └─ 표 형식 결과 보고:
         - 전 항목 PASS/WARN 상태
@@ -256,20 +230,16 @@ Claude Code에서 `/명령어 인자` 입력 시 해당 파일의 내용이 Clau
 | **파일** | `.claude/commands/blog-preview.md` |
 | **설명** | 발행 어시스턴트 HTML 생성 + 브라우저 오픈 |
 | **인자** | `<폴더명 또는 경로>` |
-| **호출 에이전트** | 없음 (직접 스크립트 실행) |
 
 **실행 흐름**:
 ```
-/blog-preview "2026-04-08_병원마케팅"
-  │
-  ├─ 경로 추정: "폴더명" → "output/폴더명"
+/blog-preview "2026-05-05_claude45"
   │
   ├─ preview.js 실행:
   │     node scripts/preview.js --folder "output/..."
   │
   └─ 브라우저 자동 오픈 + 사용자 안내:
-        "제목부터 차례로 복사해 스마트에디터에 붙여넣으세요.
-         표는 스마트에디터에서 직접 만드세요."
+        "제목부터 차례로 복사해 Tistory 에디터에 붙여넣으세요."
 ```
 
 ---
@@ -279,29 +249,27 @@ Claude Code에서 `/명령어 인자` 입력 시 해당 파일의 내용이 Clau
 | 항목 | 내용 |
 |------|------|
 | **파일** | `.claude/commands/blog-publish-ready.md` |
-| **설명** | 발행 직전 최종 체크리스트 (10개 항목) |
+| **설명** | 발행 직전 최종 체크리스트 |
 | **인자** | `<폴더명>` |
-| **호출 에이전트** | `medical-law-checker` (조건부) |
 
 **실행 흐름**:
 ```
-/blog-publish-ready "2026-04-08_병원마케팅"
+/blog-publish-ready "2026-05-05_claude45"
   │
-  ├─ [1] 수치 사실 확인: post.md 수치 → brand-facts.md 대조
+  ├─ [1] 원문 링크 포함 확인
   ├─ [2] 금칙어·최상급: banned-words.json 로드 → 탐지
-  ├─ [3] 의료법 (해당 키워드만): medical-law-checker 에이전트 호출 권장
-  ├─ [4] 이미지 4장 존재 + 크기 확인
-  ├─ [5] 외부 링크 0건: post.html에서 http/https 탐지
-  ├─ [6] quality-check.js 재실행
-  ├─ [7] duplicate-check.js 재실행
-  ├─ [8] metadata.json 존재 확인
-  ├─ [9] guide.md 존재 확인
-  └─ [10] output/_index.json 반영 확인
+  ├─ [3] 이미지 2장 존재 + 크기 확인
+  ├─ [4] 외부 링크 ≤ 3개: post.html에서 http/https 탐지
+  ├─ [5] quality-check.js 재실행
+  ├─ [6] duplicate-check.js 재실행
+  ├─ [7] metadata.json 존재 확인
+  ├─ [8] guide.md 존재 확인
+  └─ [9] output/_index.json 반영 확인
 
 최종 보고:
   - 전 항목 PASS/FAIL/REVIEW 표 출력
-  - FAIL/REVIEW 항목 수정 방향 제안
-  - 전체 PASS → "스마트에디터에서 수동 업로드하세요" 안내
+  - FAIL 항목 수정 방향 제안
+  - 전체 PASS → "Tistory 에디터에서 수동 업로드하세요" 안내
 ```
 
 ---

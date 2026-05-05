@@ -14,8 +14,6 @@
  *   GEMINI_API_KEY=xxx node scripts/generate-images.js \
  *     --title "..." --keyword "..." \
  *     --points "p1|||p2|||p3" \
- *     --quote "..." \
- *     --steps "s1|||s2|||s3" \
  *     --output "output/folder/images"
  */
 
@@ -58,70 +56,44 @@ const FG_COLOR   = process.env.BRAND_FG_COLOR || '#1A1A1A';
 const ACCENT     = process.env.BRAND_ACCENT   || '#D97A3A';
 
 const BRAND_STYLE = [
-  'Minimal Korean editorial infographic design',
-  `off-white background (${BG_COLOR}), deep charcoal (${FG_COLOR}) text, single point color (${ACCENT})`,
-  'premium clean sans-serif typography (Pretendard-like)',
-  'generous whitespace, clear visual hierarchy',
-  'information-diagram first: prefer charts, tables, flow nodes, comparison layouts over decorative illustration',
+  'Minimal editorial infographic design',
+  `Off-white background (${BG_COLOR}), deep charcoal (${FG_COLOR}) text, single accent color (${ACCENT})`,
+  'Premium clean sans-serif typography, generous whitespace, clear visual hierarchy',
+  'Information-diagram first: prefer charts, tables, flow nodes, comparison layouts over decorative illustration',
   'NO people, NO stock-photo aesthetic, NO random clutter, NO fake logos, NO watermark, NO heavy gradient or glow',
-  'Korean text must render perfectly legible and sharp',
   `The only brand name shown is exactly "${BRAND_NAME}" — use this exact spelling and capitalization`,
 ].join('. ');
 
 function thumbnailPrompt({ title, keyword }) {
   return [
-    `Create a 16:9 Korean blog thumbnail — editorial infographic style, not an illustration.`,
-    `Large bold Korean headline (must be perfectly legible): "${title}"`,
+    `Create a 16:9 blog thumbnail for a Korean tech blog post.`,
+    `Topic: "${keyword}" — a blog post reviewing and analyzing this AI developer tool or topic.`,
     `Small pill-shaped tag in top-left corner with text: "${keyword}"`,
     `Bottom-right corner small label: "${BRAND_NAME}"`,
-    `Add one subtle visual element that hints at data/diagram (e.g., a small bar chart, numbered badge, or flow arrow) — not a photo.`,
+    `Visual concept: minimal abstract diagram representing "${keyword}" — use split comparison panel, parallel flow arrows, or circuit-style nodes. No text overlay required in the image itself.`,
+    `Add one subtle data/diagram element (e.g., comparison bars, flow arrows, numbered badge) — not a photo, not a person.`,
     BRAND_STYLE,
-    `Layout: headline left-aligned, diagram element right side, balanced negative space.`,
+    `Layout: diagram element right side, balanced negative space on left suitable for text overlay.`,
   ].join('\n');
 }
 
-function infographicPrompt({ keyword, points }) {
-  const numbered = points
+function infographicPrompt({ keyword, points, enPoints }) {
+  const pts = (enPoints && enPoints.length > 0) ? enPoints : points;
+  if (enPoints && enPoints.length > 0 && enPoints.length !== points.length && points.length > 0) {
+    console.warn(`⚠️  en-points(${enPoints.length}개) 와 points(${points.length}개) 수가 다릅니다. en-points 기준으로 렌더링합니다.`);
+  }
+  const numbered = pts
     .slice(0, 5)
     .map((p, i) => `${i + 1}. ${p}`)
     .join('\n');
   return [
-    `Create a 2:3 vertical Korean infographic poster — pure information diagram, no decorative art.`,
-    `Top title in Korean: "${keyword} 핵심 포인트"`,
-    `Below the title, render these items as a vertical stack of numbered cards (rounded rectangles with a left accent bar), each with the number prominently displayed and the Korean text rendered clearly:`,
+    `Create a 2:3 vertical infographic poster — pure information diagram, no decorative art.`,
+    `Top title: "${keyword} — Key Points"`,
+    `Below the title, render these items as a vertical stack of numbered cards (rounded rectangles with a left accent bar), each with the number prominently displayed and the text rendered clearly:`,
     numbered,
     `Bottom footer center: "${BRAND_NAME}"`,
     BRAND_STYLE,
     `Consistent spacing between cards, clear numeric hierarchy, no icons of people.`,
-  ].join('\n');
-}
-
-function quoteCardPrompt({ quote, keyword }) {
-  return [
-    `Create a 1:1 square Korean quote card — clean editorial typography focus.`,
-    `Small label at top in warm-orange: "${keyword}"`,
-    `Center the large Korean quote in bold sans-serif (not serif), perfectly legible: "${quote}"`,
-    `Bottom-right signature: "— ${BRAND_NAME}"`,
-    `Oversized decorative quotation marks as faint background element (very low opacity).`,
-    BRAND_STYLE,
-    `No people, no photographic elements.`,
-  ].join('\n');
-}
-
-function processPrompt({ keyword, steps }) {
-  const numberedSteps = steps
-    .slice(0, 6)
-    .map((s, i) => `${i + 1}) ${s}`)
-    .join('   →   ');
-  return [
-    `Create a 4:3 Korean horizontal process flow diagram — clean schematic, not an illustration.`,
-    `Top title in Korean: "${keyword} 진행 프로세스"`,
-    `Render this as a horizontal row of numbered pill-shaped nodes connected by arrows, each node containing its Korean label clearly:`,
-    numberedSteps,
-    `Each node: rounded rectangle with number badge + Korean label. Arrows between nodes in warm-orange.`,
-    `Bottom-right corner: "${BRAND_NAME}"`,
-    BRAND_STYLE,
-    `Pure schematic diagram, no background imagery, no people.`,
   ].join('\n');
 }
 
@@ -166,18 +138,20 @@ async function generateOne(prompt) {
 // ────────────────────────────────────────────────
 async function main() {
   const args = parseArgs(process.argv);
-  const { title, keyword, quote, output } = args;
+  const { title, keyword, output } = args;
   const points = splitList(args.points);
-  const steps = splitList(args.steps);
+  const enPoints = splitList(args['en-points']);
+  const promptOnly = !!args['prompt-only'];
 
   if (!title || !keyword || !output) {
     console.error(
-      'Usage: --title <t> --keyword <k> --output <dir> [--points a|||b] [--quote q] [--steps a|||b]'
+      'Usage: --title <t> --keyword <k> --output <dir> [--points a|||b] [--prompt-only]'
     );
     process.exit(2);
   }
-  if (!process.env.GEMINI_API_KEY) {
-    console.error('ERROR: GEMINI_API_KEY environment variable is required.');
+  if (!promptOnly && !process.env.GEMINI_API_KEY) {
+    console.error('ERROR: GEMINI_API_KEY is required for image generation.');
+    console.error('Tip: Use --prompt-only to output prompts without calling the API.');
     process.exit(1);
   }
 
@@ -190,23 +164,21 @@ async function main() {
       prompt: infographicPrompt({
         keyword,
         points: points.length ? points : [keyword],
-      }),
-    },
-    {
-      name: 'quote-card',
-      prompt: quoteCardPrompt({
-        quote: quote || title,
-        keyword,
-      }),
-    },
-    {
-      name: 'process',
-      prompt: processPrompt({
-        keyword,
-        steps: steps.length ? steps : ['리서치', '기획', '제작', '검수'],
+        enPoints,
       }),
     },
   ];
+
+  if (promptOnly) {
+    for (const job of jobs) {
+      const promptPath = join(output, `${job.name}_prompt.txt`);
+      await writeFile(promptPath, job.prompt, 'utf8');
+      console.log(`  ✓ ${promptPath}`);
+    }
+    console.log(`\nDone: ${jobs.length} prompts saved to ${output}`);
+    console.log('→ Copy each prompt into Google AI Studio (aistudio.google.com) or Gemini to generate images.');
+    return;
+  }
 
   let okCount = 0;
   const errors = [];
