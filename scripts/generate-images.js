@@ -50,7 +50,7 @@ const splitList = (s) =>
 // ────────────────────────────────────────────────
 // 브랜드 시스템 (환경 변수 기반 — /setup-domain이 설정)
 // ────────────────────────────────────────────────
-const BRAND_NAME = process.env.BRAND_NAME || 'YOUR BRAND';
+const BRAND_NAME = process.env.BRAND_NAME || 'taetae';
 const BG_COLOR   = process.env.BRAND_BG_COLOR || '#F7F6F2';
 const FG_COLOR   = process.env.BRAND_FG_COLOR || '#1A1A1A';
 const ACCENT     = process.env.BRAND_ACCENT   || '#D97A3A';
