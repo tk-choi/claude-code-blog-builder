@@ -39,8 +39,16 @@ const stripHtml = (s) =>
 
 const BANNED = ['최고', '최저', '최상', '무조건', '100%', '절대', '완벽'];
 const CONJUNCTIONS = ['또한', '그리고', '더불어', '아울러'];
+const CONJ_RE = new RegExp(CONJUNCTIONS.join('|'), 'g');
 
-function check(text, raw, keyword) {
+const ANGLE_STOPWORDS = new Set([
+  '그리고', '하지만', '그러나', '이번', '다음', '정말', '아주', '매우',
+  '있습니다', '합니다', '됩니다', '입니다', '있는', '하는', '되는',
+  '통해', '위해', '대한', '관련', '경우', '때문', '이후', '이전',
+  '이것', '저것', '그것', '이런', '저런', '그런', '때문에',
+]);
+
+function check(text, raw, keyword, angleSummary) {
   const results = [];
   const charCount = text.replace(/\s/g, '').length;
 
@@ -124,10 +132,7 @@ function check(text, raw, keyword) {
   });
 
   // 7. 접속사 비율
-  const conjCount = CONJUNCTIONS.reduce(
-    (n, c) => n + (text.match(new RegExp(c, 'g')) || []).length,
-    0
-  );
+  const conjCount = (text.match(CONJ_RE) || []).length;
   const conjRatio = sentences.length
     ? (conjCount / sentences.length) * 100
     : 0;
@@ -136,6 +141,31 @@ function check(text, raw, keyword) {
     pass: conjRatio <= 5,
     detail: `${conjCount}회 / ${sentences.length}문장 = ${conjRatio.toFixed(1)}% (목표 ≤ 5%)`,
   });
+
+  // 8. 각도 일치성 (angleSummary 있을 때만)
+  if (angleSummary) {
+    // [IMAGE:...] 마커와 ## 헤딩 제거 후 앞 30% 추출
+    const cleaned = raw
+      .replace(/\[IMAGE:[^\]]*\]/g, '')
+      .replace(/^##.*$/gm, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+    const intro = cleaned.slice(0, Math.floor(cleaned.length * 0.3));
+
+    const tokens = [...new Set(
+      (angleSummary.match(/[가-힣A-Za-z0-9]+/g) || [])
+        .filter((t) => t.length >= 2 && !ANGLE_STOPWORDS.has(t))
+    )];
+
+    if (tokens.length > 0) {
+      const angleHits = tokens.filter((t) => intro.includes(t));
+      results.push({
+        name: '각도 일치성',
+        pass: angleHits.length >= 2,
+        detail: `승인 각도 핵심어 ${angleHits.length}/${tokens.length}개 도입부 등장 (목표 ≥ 2개)${angleHits.length > 0 ? ` — 매칭: ${angleHits.join(', ')}` : ''}`,
+      });
+    }
+  }
 
   return { charCount, sentences: sentences.length, results };
 }
@@ -155,7 +185,20 @@ async function main() {
   const isHtml = /<[a-z][\s\S]*>/i.test(raw);
   const text = isHtml ? stripHtml(raw) : raw;
 
-  const report = check(text, raw, args.keyword);
+  let angleSummary = null;
+  try {
+    const metaPath = join(dirname(args.file), 'metadata.json');
+    const meta = JSON.parse(await readFile(metaPath, 'utf8'));
+    angleSummary = meta.angle_summary || null;
+  } catch {
+    // optional — 기존 글에는 이 필드가 없어 정상
+  }
+
+  if (angleSummary === null && args.file.endsWith('post.md')) {
+    console.warn('⚠️  metadata.json 없음 또는 angle_summary 미설정 — 각도 일치성 검사 생략');
+  }
+
+  const report = check(text, raw, args.keyword, angleSummary);
 
   console.log(`\n📋 블로그 품질 리포트`);
   console.log(`파일: ${args.file}`);

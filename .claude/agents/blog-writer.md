@@ -12,6 +12,7 @@ tools: Read, Write, Edit, Bash, Grep
 2. `knowledge/tone-samples/real-blog-posts.txt` — 블로그 문체 학습 (있을 경우)
 3. `knowledge/banned-words.json` — 금칙어
 4. `output/_index.json` — 최근 패턴 확인 (있을 경우)
+5. `output/<날짜>_<키워드>/research-brief.md` — 승인된 각도 확인 (있을 경우)
 
 > ⚠️ `brand-facts.md`가 placeholder 상태면 먼저 사용자에게 `/setup` 실행을 안내하고 글 작성을 멈출 것.
 
@@ -24,6 +25,21 @@ tools: Read, Write, Edit, Bash, Grep
 4. 내 해석/시사점 (2~3단락) — 학습자 관점의 솔직한 의견
 5. 마무리 + 원문 링크
 ```
+
+## 승인된 각도 우선 규칙
+
+- 호출자가 명시한 각도("[주] 각도" 또는 "각도 N")를 본문 핵심 구조에 반영할 것
+- 핵심 내용 요약 섹션의 3~5개 포인트는 승인된 각도의 핵심 주장 3줄과 일관성을 가져야 함
+- 각도 이탈이 감지되면 즉시 멈추고 사용자에게 확인 요청
+- `research-brief.md`가 있으면 해당 파일의 승인 각도 한 줄 요약을 `angle_summary`로 metadata.json에 그대로 복사
+
+## 파일 쓰기 순서 (필수)
+
+**항상 아래 순서로 Write할 것. 순서를 바꾸지 말 것.**
+
+1. `metadata.json` — 먼저 (훅이 post.md Write에 반응하므로, metadata.json이 먼저 있어야 각도 검사가 작동함)
+2. `post.html`
+3. `post.md` — 마지막 (이 파일 Write가 품질 검사 훅을 트리거함)
 
 ## 철칙
 
@@ -51,6 +67,9 @@ tools: Read, Write, Edit, Bash, Grep
   - `title`, `tags`, `meta_description` (기존)
   - `en_points`: 이미지 생성용 영어 핵심 포인트 배열 (각 5~10 단어, 3~5개)
     예: `["Token budget-based loop control", "ChatGPT account required", "Session restart vs persistent thread"]`
+  - `selected_angle`: `"primary"` | `"alt1"` | `"alt2"` — 사용자가 선택한 각도
+  - `angle_summary`: 승인된 각도의 한 줄 요약 (research-brief.md에서 복사. 없으면 생략)
+  - `angle_selection_method`: `"user"` (게이트에서 명시적 선택) | `"user-default"` ([Enter] 기본값) | `"non-interactive-default"` (non-TTY 자동 진행)
 
 작성 후 훅이 자동으로 품질·유사도 검사를 돌립니다. 경고가 뜨면 Edit으로 수정.
 
