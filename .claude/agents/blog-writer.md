@@ -33,6 +33,30 @@ tools: Read, Write, Edit, Bash, Grep
 - 각도 이탈이 감지되면 즉시 멈추고 사용자에게 확인 요청
 - `research-brief.md`가 있으면 해당 파일의 승인 각도 한 줄 요약을 `angle_summary`로 metadata.json에 그대로 복사
 
+## 제목 자동 선택 (metadata.json 저장 전)
+
+**metadata.json을 쓰기 전에 아래 순서로 제목을 결정한다.**
+
+1. `research-brief.md`의 `## 제목 후보 종합` 섹션을 찾는다.
+2. 섹션이 있으면 — 3개 후보 각각에 SEO 점수(최대 3점)를 인라인으로 계산한다:
+   - **길이** (1점): 한국어 기준 40~55자이면 1점, 아니면 0점
+   - **키워드 위치** (1점): 주요 키워드가 제목 앞 15자 이내에 있으면 1점, 아니면 0점
+   - **금칙어** (1점): `knowledge/banned-words.json`의 ai_cliches 단어가 없으면 1점, 있으면 0점
+3. 최고점 후보를 `title`로 선택한다. 동점이면 **질문형 > 숫자형 > 가치제안형** 순서로 결정.
+4. metadata.json에 아래 필드를 기록한다:
+   ```json
+   "title_candidates": [
+     {"text": "제목 후보 텍스트", "seo_score": 3, "pattern": "질문형"},
+     {"text": "제목 후보 텍스트", "seo_score": 2, "pattern": "숫자형"},
+     {"text": "제목 후보 텍스트", "seo_score": 3, "pattern": "가치제안형"}
+   ],
+   "title_selection_method": "auto-seo"
+   ```
+5. 섹션이 없으면 — 기존 방식(각도별 추천 제목 중 수동 선택)으로 폴백하고 `"title_selection_method": "manual"`로 기록.
+6. 선택 완료 후 호출자에게 아래 형식으로 한 줄 보고한다:
+   `제목: "{선택된 제목}" (SEO 점수 {score}/3, {패턴})`
+   나머지 후보는 `metadata.json`의 `title_candidates[]`에서 확인 가능.
+
 ## 파일 쓰기 순서 (필수)
 
 **항상 아래 순서로 Write할 것. 순서를 바꾸지 말 것.**
@@ -70,6 +94,8 @@ tools: Read, Write, Edit, Bash, Grep
   - `selected_angle`: `"primary"` | `"alt1"` | `"alt2"` — 사용자가 선택한 각도
   - `angle_summary`: 승인된 각도의 한 줄 요약 (research-brief.md에서 복사. 없으면 생략)
   - `angle_selection_method`: `"user"` (게이트에서 명시적 선택) | `"user-default"` ([Enter] 기본값) | `"non-interactive-default"` (non-TTY 자동 진행)
+  - `title_candidates`: 제목 후보 배열 — `[{text, seo_score, pattern}, ...]` (auto-seo일 때 필수, manual이면 생략 가능)
+  - `title_selection_method`: `"auto-seo"` (SEO 자동 선택) | `"manual"` (제목 후보 종합 섹션 없어 수동 선택)
 
 작성 후 훅이 자동으로 품질·유사도 검사를 돌립니다. 경고가 뜨면 Edit으로 수정.
 
