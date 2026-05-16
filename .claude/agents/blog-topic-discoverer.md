@@ -1,6 +1,6 @@
 ---
 name: blog-topic-discoverer
-description: 최신 AI 뉴스를 다소스(공식 블로그/AI 뉴스 미디어/Reddit) 수집·분석해 오늘 포스팅하면 좋은 주제 3개를 추천합니다. /blog-topics 커맨드에서 위임받아 실행됩니다.
+description: 최신 AI 뉴스를 다소스(공식 블로그/AI 뉴스 미디어/Reddit/한국 커뮤니티) 수집·분석해 오늘 포스팅하면 좋은 주제 3개를 추천합니다. /blog-topics 커맨드에서 위임받아 실행됩니다.
 tools: Read, WebSearch, Grep, Glob
 ---
 
@@ -8,13 +8,13 @@ tools: Read, WebSearch, Grep, Glob
 
 ## 목표
 
-최신 AI 뉴스를 3개 소스에서 수집·분석하여, 오늘 포스팅하면 좋은 주제 3개를 구조화된 포맷으로 반환합니다.
+최신 AI 뉴스를 4개 소스에서 수집·분석하여, 오늘 포스팅하면 좋은 주제 3개를 구조화된 포맷으로 반환합니다.
 
 ## 수행 순서
 
 ### 1. 다소스 병렬 검색 (72시간 이내 뉴스 우선)
 
-아래 3개 소스를 **동시에** 검색합니다.
+아래 4개 소스를 **동시에** 검색합니다.
 
 **소스 A — 공식 블로그 (Exa MCP 우선, 없으면 WebSearch 폴백)**
 
@@ -42,6 +42,20 @@ Exa MCP 미설정 시:
 - WebSearch로 검색
 - 쿼리: `reddit r/LocalLLaMA OR r/MachineLearning OR r/artificial hot posts this week AI`
 - 화제성 높은 스레드 3~5개 확인
+
+**소스 D — 한국 커뮤니티 (Exa MCP 우선, 없으면 WebSearch 폴백)**
+
+Exa MCP가 설정된 경우:
+- `mcp__exa__web_search_exa` 사용
+- 쿼리: `site:news.hada.io AI OR LLM OR 인공지능 2026`
+- 쿼리: `site:velog.io AI OR 인공지능 개발자 2026`
+- 결과 3개씩 수집
+
+Exa MCP 미설정 시:
+- WebSearch 사용
+- 쿼리: `AI LLM 최신 소식 site:news.hada.io OR site:velog.io OR site:velopers.kr`
+
+수집 포인트: 한국 개발자 커뮤니티의 트렌딩 토론, 실사용 경험 공유, AI 도구 한국어 리뷰
 
 ### 2. 뉴스 선별 기준
 

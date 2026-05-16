@@ -48,7 +48,57 @@ const ANGLE_STOPWORDS = new Set([
   '이것', '저것', '그것', '이런', '저런', '그런', '때문에',
 ]);
 
-function check(text, raw, keyword, angleSummary) {
+// knowledge/banned-words.json 로드 (없으면 빈 객체 폴백)
+// process.cwd() 기준 — 스크립트는 항상 프로젝트 루트에서 실행됨
+async function loadBannedWords() {
+  try {
+    const raw = await readFile(join(process.cwd(), 'knowledge', 'banned-words.json'), 'utf8');
+    return JSON.parse(raw);
+  } catch {
+    return {};
+  }
+}
+
+// SEO 제목 3개 검증 (경고만, exit 0 유지)
+function checkSeoTitle(title, keyword, aiCliches) {
+  const results = [];
+  if (!title) return results;
+
+  // 제목 길이 (한국어 기준 40-55자)
+  const len = title.length;
+  results.push({
+    name: 'SEO 제목 길이',
+    pass: len >= 40 && len <= 55,
+    detail: `제목 ${len}자 (권장 40-55자)`,
+  });
+
+  // 키워드 앞 배치 — 앞 15자 이내
+  if (keyword) {
+    const inPrefix = title.slice(0, 15).includes(keyword);
+    results.push({
+      name: 'SEO 키워드 위치',
+      pass: inPrefix,
+      detail: inPrefix
+        ? `키워드 "${keyword}" 제목 앞 15자 이내 포함`
+        : `키워드 "${keyword}"가 제목 앞 15자 미포함 — 앞으로 이동 권장`,
+    });
+  }
+
+  // ai_cliches 제목 포함 여부
+  const cliches = aiCliches || [];
+  if (cliches.length > 0) {
+    const hits = cliches.filter((w) => title.includes(w));
+    results.push({
+      name: 'SEO 제목 금칙어',
+      pass: hits.length === 0,
+      detail: hits.length === 0 ? '제목 금칙어 없음' : `제목에 금칙어: ${hits.join(', ')}`,
+    });
+  }
+
+  return results;
+}
+
+function check(text, raw, keyword, angleSummary, bannedExtra = []) {
   const results = [];
   const charCount = text.replace(/\s/g, '').length;
 
@@ -64,7 +114,7 @@ function check(text, raw, keyword, angleSummary) {
     const occurrences = (
       text.match(new RegExp(escapeRe(keyword), 'g')) || []
     ).length;
-    const totalWords = text.length / 2; // 한국어 대략 추정 (글자÷2)
+    const totalWords = text.length / 2;
     const density = (occurrences / totalWords) * 100;
     const ok = occurrences >= 2 && occurrences <= 5;
     results.push({
@@ -123,8 +173,9 @@ function check(text, raw, keyword, angleSummary) {
         : `${links.length}개 발견 — 3개 이하로 줄여주세요: ${links.slice(0, 3).join(', ')}`,
   });
 
-  // 6. 금칙어
-  const hits = BANNED.filter((w) => text.includes(w));
+  // 6. 금칙어 (하드코딩 배열 + banned-words.json의 ai_cliches 합산)
+  const allBanned = [...BANNED, ...bannedExtra];
+  const hits = allBanned.filter((w) => text.includes(w));
   results.push({
     name: '최상급/금칙어',
     pass: hits.length === 0,
@@ -144,7 +195,6 @@ function check(text, raw, keyword, angleSummary) {
 
   // 8. 각도 일치성 (angleSummary 있을 때만)
   if (angleSummary) {
-    // [IMAGE:...] 마커와 ## 헤딩 제거 후 앞 30% 추출
     const cleaned = raw
       .replace(/\[IMAGE:[^\]]*\]/g, '')
       .replace(/^##.*$/gm, '')
@@ -181,15 +231,20 @@ async function main() {
     process.exit(2);
   }
 
+  const bannedWords = await loadBannedWords();
+  const aiCliches = bannedWords.categories?.ai_cliches?.words || [];
+
   const raw = await readFile(args.file, 'utf8');
   const isHtml = /<[a-z][\s\S]*>/i.test(raw);
   const text = isHtml ? stripHtml(raw) : raw;
 
   let angleSummary = null;
+  let metaTitle = null;
   try {
     const metaPath = join(dirname(args.file), 'metadata.json');
     const meta = JSON.parse(await readFile(metaPath, 'utf8'));
     angleSummary = meta.angle_summary || null;
+    metaTitle = meta.title || null;
   } catch {
     // optional — 기존 글에는 이 필드가 없어 정상
   }
@@ -198,7 +253,7 @@ async function main() {
     console.warn('⚠️  metadata.json 없음 또는 angle_summary 미설정 — 각도 일치성 검사 생략');
   }
 
-  const report = check(text, raw, args.keyword, angleSummary);
+  const report = check(text, raw, args.keyword, angleSummary, aiCliches);
 
   console.log(`\n📋 블로그 품질 리포트`);
   console.log(`파일: ${args.file}`);
@@ -211,6 +266,18 @@ async function main() {
     console.log(`${mark}  ${r.name.padEnd(14)} — ${r.detail}`);
     if (!r.pass) warnings++;
   }
+
+  // SEO 제목 검사 (metadata.json에 title이 있을 때만)
+  const seoResults = checkSeoTitle(metaTitle, args.keyword, aiCliches);
+  if (seoResults.length > 0) {
+    console.log('\n📌 SEO 제목 검사');
+    for (const r of seoResults) {
+      const mark = r.pass ? '✅ PASS' : '⚠️  WARN';
+      console.log(`${mark}  ${r.name.padEnd(14)} — ${r.detail}`);
+      if (!r.pass) warnings++;
+    }
+  }
+
   console.log(
     `\n결과: ${warnings === 0 ? '모든 검사 통과' : `${warnings}개 경고`}\n`
   );
@@ -219,7 +286,7 @@ async function main() {
   await writeFile(
     reportPath,
     JSON.stringify(
-      { file: args.file, keyword: args.keyword || null, ...report },
+      { file: args.file, keyword: args.keyword || null, ...report, seoResults },
       null,
       2
     )
