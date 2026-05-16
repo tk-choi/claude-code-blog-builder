@@ -14,7 +14,11 @@
  *   GEMINI_API_KEY=xxx node scripts/generate-images.js \
  *     --title "..." --keyword "..." \
  *     --points "p1|||p2|||p3" \
+ *     --en-points "ep1|||ep2|||ep3" \
+ *     --visual-concept "Three nodes connected by arrows..." \
  *     --output "output/folder/images"
+ *
+ * --visual-concept: 글 내용 기반 영문 비주얼 디렉션. 없으면 keyword 기반 기본 레이아웃 사용.
  */
 
 import { mkdir, writeFile } from 'node:fs/promises';
@@ -64,13 +68,16 @@ const BRAND_STYLE = [
   `The only brand name shown is exactly "${BRAND_NAME}" — use this exact spelling and capitalization`,
 ].join('. ');
 
-function thumbnailPrompt({ title, keyword }) {
+function thumbnailPrompt({ keyword, visualConcept }) {
+  const visualLine = visualConcept
+    ? `Visual concept: ${visualConcept}`
+    : `Visual concept: minimal abstract diagram representing "${keyword}" — use split comparison panel, parallel flow arrows, or circuit-style nodes. No text overlay required in the image itself.`;
   return [
     `Create a 16:9 blog thumbnail for a Korean tech blog post.`,
     `Topic: "${keyword}" — a blog post reviewing and analyzing this AI developer tool or topic.`,
     `Small pill-shaped tag in top-left corner with text: "${keyword}"`,
     `Bottom-right corner small label: "${BRAND_NAME}"`,
-    `Visual concept: minimal abstract diagram representing "${keyword}" — use split comparison panel, parallel flow arrows, or circuit-style nodes. No text overlay required in the image itself.`,
+    visualLine,
     `Add one subtle data/diagram element (e.g., comparison bars, flow arrows, numbered badge) — not a photo, not a person.`,
     BRAND_STYLE,
     `Layout: diagram element right side, balanced negative space on left suitable for text overlay.`,
@@ -141,11 +148,12 @@ async function main() {
   const { title, keyword, output } = args;
   const points = splitList(args.points);
   const enPoints = splitList(args['en-points']);
+  const visualConcept = args['visual-concept'] || null;
   const promptOnly = !!args['prompt-only'];
 
   if (!title || !keyword || !output) {
     console.error(
-      'Usage: --title <t> --keyword <k> --output <dir> [--points a|||b] [--prompt-only]'
+      'Usage: --title <t> --keyword <k> --output <dir> [--points a|||b] [--en-points e|||p] [--visual-concept "..."] [--prompt-only]'
     );
     process.exit(2);
   }
@@ -158,7 +166,7 @@ async function main() {
   await mkdir(output, { recursive: true });
 
   const jobs = [
-    { name: 'thumbnail', prompt: thumbnailPrompt({ title, keyword }) },
+    { name: 'thumbnail', prompt: thumbnailPrompt({ title, keyword, visualConcept }) },
     {
       name: 'infographic',
       prompt: infographicPrompt({

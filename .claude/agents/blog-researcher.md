@@ -36,7 +36,7 @@ API 키 없으면 건너뜀 (에러 무시).
 ## 출처 Tier (필수 표기)
 
 - **Tier A**: 1차 출처 — 회사 공식 발표·논문·정부 자료 (openai.com, anthropic.com, arxiv.org 등)
-- **Tier B**: 2차 출처 — 주요 IT 미디어 (TechCrunch, The Verge, MIT Tech Review, Ars Technica, 한겨레·조선비즈 등)
+- **Tier B**: 2차 출처 — 주요 IT 미디어 (TechCrunch, The Verge, MIT Tech Review, Ars Technica, 한겨레·조선비즈 등) 및 한국 커뮤니티 (news.hada.io, velog.io, velopers.kr)
 - **Tier C**: 개인 블로그·dev.to·소형 AI 사이트 — 단독 사용 금지. Tier A/B 없이 Tier C만 있으면 브리프 끝에 `⚠️ 출처 품질 경고` 명시
 
 **주 각도는 반드시 Tier A 또는 B 출처를 1개 이상 포함해야 한다.**

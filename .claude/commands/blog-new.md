@@ -68,6 +68,20 @@ stdin이 TTY가 아닌 경우, 게이트 한 줄을 출력하되 블로킹하지
 - `post.md` 와 `post.html` 작성
 - `output/<폴더>/` 에 저장 → 훅이 자동으로 품질검사·유사도검사 실행
 
+## 2.5. 비주얼 컨셉 생성 (STEP 2.5)
+
+썸네일 AI slop을 방지하기 위해, 이미지 생성 전 글 내용 기반 영문 비주얼 컨셉을 생성합니다.
+
+`metadata.json`의 `en_points[0~2]`와 `selected_angle`을 바탕으로 아래 형식의 **영문 비주얼 컨셉 1문장**을 생성하세요:
+
+> 시각적 오브젝트/구조 + 배치 + 강조 요소를 구체적으로 묘사. 예:
+> - `"Three circular nodes connected by directional arrows: left=Token Budget, center=Session Control (highlighted with accent ring), right=Thread Persistence. Minimal monochrome flow diagram."`
+> - `"Split-panel comparison: left side shows fragmented code blocks (red tint), right side shows unified API layer (accent color). Clean flat-style diagram, no people."`
+
+생성한 컨셉을 `VISUAL_CONCEPT` 변수에 저장하고 STEP 3에서 사용합니다.
+
+**en_points가 없는 경우**: `VISUAL_CONCEPT`을 빈 문자열로 두고 STEP 3에서 `--visual-concept` 인수를 생략합니다.
+
 ## 3. 이미지 생성 (STEP 3)
 
 `metadata.json`의 `en_points`(영어 핵심 포인트)를 인포그래픽에 사용합니다.
@@ -83,9 +97,10 @@ set -a && . ./.env && set +a && node scripts/generate-images.js \
   --title "..." --keyword "$ARGUMENTS" \
   --points "핵심포인트1|||핵심포인트2|||핵심포인트3" \
   --en-points "$EN_POINTS" \
+  --visual-concept "$VISUAL_CONCEPT" \
   --output "output/<폴더>/images"
 ```
-썸네일 + 인포그래픽 2종 생성.
+썸네일 + 인포그래픽 2종 생성. `--visual-concept`이 있으면 글 내용을 반영한 썸네일 생성.
 
 **옵션 B — 프롬프트 출력** (직접 AI Studio에 입력):
 ```bash
@@ -93,6 +108,7 @@ node scripts/generate-images.js \
   --title "..." --keyword "$ARGUMENTS" \
   --points "핵심포인트1|||핵심포인트2|||핵심포인트3" \
   --en-points "$EN_POINTS" \
+  --visual-concept "$VISUAL_CONCEPT" \
   --output "output/<폴더>/images" \
   --prompt-only
 ```
