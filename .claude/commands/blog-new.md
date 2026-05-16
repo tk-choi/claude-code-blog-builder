@@ -125,6 +125,8 @@ node scripts/generate-images.js \
 
 ## 완료 후 사용자에게 보고할 것
 - 제목 / 글자수 / 원문 출처
+  - blog-writer가 SEO 자동 선택했을 경우: `제목: "{제목}" (SEO 점수 {score}/3, {패턴})` 형식으로 표시
+  - 나머지 후보는 `metadata.json`의 `title_candidates[]` 참조 안내
 - 품질검사 결과, 유사도 검사 결과
 - 이미지 생성 여부 (자동 or 프롬프트 출력)
 - 발행 전 확인 항목 (원문 링크·수치 사실 여부)
